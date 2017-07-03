@@ -258,6 +258,10 @@ for ITER=ITERS % each iteration uses a random shuffling over the data, as stored
                         [U,S,V]=updateSVD_Cxy(U,S,V,...
                             sqrt(eta_t)*data.view1.training(:,modisamp),...
                             sqrt(eta_t)*data.view2.training(:,modisamp),d);
+                        [~,idx]=sort(S,'ascend');
+                        S=S(idx);
+                        U=U(:,idx);
+                        V=V(:,idx);
                         S=msgproject(S,k);
                         [~,idx]=sort(S,'descend');
                         idx=idx(1:min(cap,length(idx)));
