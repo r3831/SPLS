@@ -1,24 +1,38 @@
-function SS = msgproject(S,k)
-%msgproject projects to the convex set of constraints sum(S)<=1, S>=0, S<=1/k
-%         using binary search.
-%
-%   S   the vector of eigen-values of the (scaled) projection matrix M
-%   k   PCA dimension (desired dimension)
+function S = the_projection( S, k )
+%% the_projection projects with respect to trace <= k                     
+% assumes S is sorted in ascending order
 
-ls=-k; rs=k;
-shf=(ls+rs)/2; % set shf = 0.
-SS=S+shf; SS(SS<0)=0; SS(SS>1/k)=1/k; % see if capped S has sum leq 1
-if sum(SS)<=1 % we are good
+%% check if capping without shift is OK
+SS=S;
+SS(S>1)=1; SS(S<0)=0;
+if sum(SS)<=k
+    S=SS;
     return;
-else % sum(SS) > 1
-    rs=shf; % search (-k,0) interval
-    while abs(ls-rs)>1e-7
-        shf=(ls+rs)/2;
-        SS=S+shf; SS(SS<0)=0; SS(SS>1/k)=1/k;
-        if sum(SS)<=1 % need to search (shf, rs).
-            ls=shf;
-        else % need to search (ls, shf).
-            rs=shf;
+end
+
+%% trace was bigger than k after capping ==> shf <= 0
+% rule: SS(i:j) should not be capped and everything outside that range
+% should be capped accordingle, i.e. SS(1:i-1)=0 and SS(j+1:l)=1
+l=length(S);
+for i=1:l
+    for j=i:l
+        SS=S;
+        if i>1
+            SS(1:i-1)=0;
+        end
+        if j<l
+            SS(j+1:l)=1;
+        end
+        shf=(k-sum(SS))/(j-i+1);
+        SS(i:j)=SS(i:j)+shf;
+        %% check for consistency
+        if (SS(i)>=0 ...
+                && (i==1 || S(i-1)+shf<=0) ... % the order of operands is important
+                && SS(j)<=1 ...
+                && (j==l || S(j+1)+shf>=1) ) % the order of operands is important
+            S=SS;
+            return;
         end
     end
+end
 end
